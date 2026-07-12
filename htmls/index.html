@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2022 개정 한국지리 백지도 퀴즈 앱</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <style>
-        body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            background-color: #f8fafc;
-        }
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4 md:p-8 text-slate-800">
@@ -24,8 +21,80 @@
     </header>
 
     <main class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        
         <section class="md:col-span-5 bg-white p-4 rounded-2xl shadow-md border border-slate-200">
             <h2 class="text-sm font-bold text-slate-400 mb-3 flex items-center gap-1">📍 대한민국 백지도</h2>
-            
-            <div class="relative w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 flex
+            <div class="relative w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 flex justify-center items-center min-h-[400px]">
+                <div id="image-fallback" class="absolute p-4 text-center text-xs text-slate-400 hidden">⚠️ 지도를 불러오는 중입니다...</div>
+                <img id="map-image" src="./image.jpg" alt="대한민국 백지도" class="w-full h-auto object-contain max-h-[600px]" onerror="this.style.display='none'; document.getElementById('image-fallback').classList.remove('hidden');">
+                
+                <div id="map-pin" class="absolute transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2 hidden">
+                    <span class="absolute inline-flex h-8 w-8 rounded-full bg-red-400 opacity-75 animate-ping"></span>
+                    <div class="relative bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-lg border-2 border-white">📍</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="md:col-span-7 space-y-4 w-full">
+            <div id="intro-card" class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-lg text-indigo-900 flex items-center gap-2"><span>💡</span> 퀴즈를 시작하기 전에!</h3>
+                    <span class="bg-indigo-600 text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-sm">규칙 안내</span>
+                </div>
+                <p class="text-sm text-slate-600 leading-relaxed">이 앱은 고등학교 한국지리 교과서에 자주 등장하는 주요 핵심 지역들의 위치를 지도를 통해 학습하는 공간입니다.</p>
+                <div class="bg-white/80 rounded-xl p-4 border border-indigo-200/60">
+                    <p class="text-xs font-bold text-indigo-900 mb-2">⚠️ 이용 시 반드시 지켜야 할 핵심 조건 3가지</p>
+                    <ul class="text-xs text-slate-600 space-y-2 list-disc list-inside">
+                        <li><strong>규칙 1:</strong> 지도에 표시된 빨간색 <strong>마커 핀(Pin)</strong> 위치를 보고 정답을 유추하세요.</li>
+                        <li><strong>규칙 2:</strong> 텍스트 <strong>입력 창이 비어 있으면</strong> 정답 확인 버튼을 누를 수 없습니다.</li>
+                        <li><strong>규칙 3:</strong> 정답이면 즉시 <strong>O 배지</strong>가 뜨며, 틀리면 맞힐 때까지 재도전할 수 있습니다.</li>
+                    </ul>
+                </div>
+                <button onclick="startQuiz()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95 cursor-pointer text-center text-sm">🚀 지리 퀴즈 시작하기</button>
+            </div>
+
+            <div id="quiz-card" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-md space-y-5">
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span id="quiz-progress-text" class="text-xs font-bold text-slate-400 tracking-wider">PROBLEM 01 / 10</span>
+                        <span id="quiz-badge" class="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded">탐구 중</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div id="quiz-progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 10%;"></div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400">HINT</p>
+                    <p id="quiz-hint" class="text-sm font-semibold text-slate-700 mt-1">로딩 중...</p>
+                </div>
+
+                <div class="space-y-3">
+                    <label for="answer-input" class="block text-xs font-bold text-slate-500 uppercase">정답 입력</label>
+                    <input type="text" id="answer-input" placeholder="예: 서울, 철원, 제주 (띄어쓰기 없이 입력)" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    <div id="warning-message" class="hidden bg-amber-50 text-amber-700 text-xs p-3 rounded-xl border border-amber-200 font-medium">⚠️ 정답을 입력칸에 채워주셔야 확인이 가능합니다!</div>
+                    <button id="check-btn" onclick="checkAnswer()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-md transition text-sm cursor-pointer">✔️ 정답 확인하기</button>
+                </div>
+
+                <div id="feedback-area" class="hidden rounded-xl p-4 flex items-center gap-4 transition-all border">
+                    <div id="feedback-badge" class="w-14 h-14 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-inner">O</div>
+                    <div class="space-y-0.5">
+                        <h4 id="feedback-title" class="font-bold text-sm">결과</h4>
+                        <p id="feedback-desc" class="text-xs text-slate-500 leading-relaxed">설명</p>
+                    </div>
+                </div>
+                
+                <button id="next-btn" onclick="nextQuestion()" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition text-sm text-center cursor-pointer">다음 문제로 넘어가기 ➡️</button>
+            </div>
+
+            <div id="result-card" class="hidden bg-gradient-to-br from-indigo-900 to-slate-900 text-white border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5 text-center">
+                <div class="space-y-2">
+                    <span class="text-3xl">🎉</span>
+                    <h3 class="font-extrabold text-xl text-white">모든 백지도 퀴즈 완료!</h3>
+                    <p class="text-indigo-200 text-xs font-light">고등학교 2022 개정 한국지리 주요 국토 조사를 마쳤습니다.</p>
+                </div>
+                <div class="bg-white/10 rounded-xl p-4 border border-white/10 backdrop-blur-sm inline-block px-8 py-4 my-2">
+                    <p class="text-[10px] text-indigo-300 font-bold tracking-wider">나의 최종 결과</p>
+                    <p class="text-3xl font-black text-amber-300 mt-1">100 / 100 점</p>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="location.reload()" class="flex-1 bg-white hover:bg-slate-100 text-slate-950 text-xs font-bold py-2.5 px-3 rounded-xl shadow cursor-pointer">🔄 다시 도전하기</button>
